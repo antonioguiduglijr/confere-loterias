@@ -3,8 +3,10 @@ import re
 import sys
 import json
 import argparse
+import os
 
 FILE_APOSTAS = 'mega.txt'
+FILE_CONCURSO = 'concurso.txt'
 URL_CONCURSO = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/'  # + concurso
 
 # https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/2962
@@ -68,8 +70,7 @@ def getResultado(concurso):
 
 
 def sorteio(apostas, resultado):
-
-    print('Resultado:', '-'.join(resultado), '\n')
+    output = 'Resultado: ' + '-'.join(resultado) + '\n\n'
     resultados = []
     for aposta in apostas:
         aposta_list = aposta.split('-')
@@ -81,50 +82,78 @@ def sorteio(apostas, resultado):
         resultados.append((total, aposta))
 
     # Ordenar por acertos crescente
-    resultados.sort(key=lambda x: x[0], reverse=False)
+    # resultados.sort(key=lambda x: x[0], reverse=False)
 
-    print('[ ACERTOS ] | APOSTADO')
+    output += '[ ACERTOS ] | APOSTADO\n'
     for total, aposta in resultados:
         if total == 6:
-            print(f'[{total}] | {aposta} >>> GANHOU A SENA!!! <<<')
+            output += f'[{total}] | {aposta} >>> GANHOU A SENA!!! <<<\n'
         elif total == 5:
-            print(f'[{total}] | {aposta} >>> QUINA')
+            output += f'[{total}] | {aposta} >>> QUINA\n'
         elif total == 4:
-            print(f'[{total}] | {aposta} >>> QUADRA')
+            output += f'[{total}] | {aposta} >>> QUADRA\n'
         else:
-            print(f'[{total}] | {aposta}')
+            output += f'[{total}] | {aposta}\n'
 
     # Resumo
     quadras = [r for r in resultados if r[0] == 4]
     quinas = [r for r in resultados if r[0] == 5]
     senas = [r for r in resultados if r[0] == 6]
 
-    print('\nRESUMO:')
-    print(f'Quadras (4 acertos): {len(quadras)}')
+    output += '\nRESUMO:\n'
+    output += f'Quadras (4 acertos): {len(quadras)}\n'
     if quadras:
-        print('  Jogos:', ', '.join([f'{aposta} ({total})' for total, aposta in quadras]))
+        output += '  Jogos: ' + ', '.join([f'{aposta} ({total})' for total, aposta in quadras]) + '\n'
 
-    print(f'Quinas (5 acertos).: {len(quinas)}')
+    output += f'Quinas (5 acertos).: {len(quinas)}\n'
     if quinas:
-        print('  Jogos:', ', '.join([f'{aposta} ({total})' for total, aposta in quinas]))
+        output += '  Jogos: ' + ', '.join([f'{aposta} ({total})' for total, aposta in quinas]) + '\n'
 
-    print(f'Senas (6 acertos)..: {len(senas)}')
+    output += f'Senas (6 acertos)..: {len(senas)}\n'
     if senas:
-        print('  Jogos:', ', '.join([f'{aposta} ({total})' for total, aposta in senas]))
+        output += '  Jogos: ' + ', '.join([f'{aposta} ({total})' for total, aposta in senas]) + '\n'
 
-    print('\n')
+    output += '\n'
+
+    return output
+
 
 def main(concurso):
     apostas = getApostas()
     resultado = getResultado(concurso)
 
-    sorteio(apostas, resultado)
+    output = sorteio(apostas, resultado)
+    print(output)
+
+    # Salvar o output em historico/historico_<concurso>.txt
+    filename = f'historico/historico_{concurso}.txt'
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(output)
+
+    # Salvar o número do concurso em concurso.txt
+    with open(FILE_CONCURSO, 'w') as f:
+        f.write(str(concurso))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Verificar resultados da Mega Sena.')
-    parser.add_argument('concurso', type=int, help='Número do concurso a verificar')
+    parser.add_argument('concurso', type=int, nargs='?', help='Número do concurso a verificar (opcional)')
     args = parser.parse_args()
 
-    print('\nVerificar resultados do concurso:', args.concurso)
-    main(args.concurso)
+    concurso = args.concurso
+    if concurso is None:
+        # Tentar ler do arquivo concurso.txt
+        if os.path.exists(FILE_CONCURSO):
+            try:
+                with open(FILE_CONCURSO, 'r') as f:
+                    ultimo_concurso = int(f.read().strip())
+                    concurso = ultimo_concurso + 1
+            except (ValueError, IOError):
+                print('Erro ao ler o arquivo concurso.txt. Forneça o número do concurso.')
+                sys.exit(1)
+        else:
+            print('Arquivo concurso.txt não encontrado. Forneça o número do concurso.')
+            sys.exit(1)
+
+    print('\nVerificar resultados do concurso:', concurso)
+    main(concurso)
