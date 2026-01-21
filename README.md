@@ -1,17 +1,15 @@
 Código criado inspirado no repo: https://github.com/leandrotoledo/mega
-====
 
 Confere-Loterias
 ====
 Script python para conferir resultado de concursos da loteira com apostas realizadas
-
 
 Instruções
 ==========
 
 1) No mesmo local do script criar arquivo mega.txt com as suas dezenas apostadas. 
 
-Por exemplo:
+  Por exemplo:
 
 04-07-12-25-37-43
 
