@@ -3,6 +3,12 @@ import os
 import sys
 from urllib.request import urlopen
 import subprocess
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Carrega o .env
+login = os.getenv('EMAIL_LOGIN')
+password = os.getenv('EMAIL_PASSWORD')
 
 FILE_CONCURSO = 'concurso.txt'
 URL_CONCURSO = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/'  # + concurso
@@ -24,6 +30,12 @@ def main():
     parser.add_argument('--login', type=str, help='Login do email do Gmail (ex: seuemail@gmail.com)')
     parser.add_argument('--senha', type=str, help='Senha do email do Gmail')
     args = parser.parse_args()
+
+    # Se não fornecidos via argumentos, usar valores do .env
+    if args.login is None:
+        args.login = login
+    if args.senha is None:
+        args.senha = password
 
     concurso = args.concurso_inicial
     if concurso is None:
