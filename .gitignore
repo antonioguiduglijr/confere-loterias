@@ -33,3 +33,7 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+historico/
+jogo1.jpeg
+jogo2.jpeg
+mega.txt
