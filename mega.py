@@ -74,7 +74,13 @@ def getResultado(concurso):
     # Garante strings com dois dígitos
     resultado = [str(d).zfill(2) for d in lista]
 
-    return resultado
+    # Extrai dataApuracao
+    dataApuracao = obj.get('dataApuracao', 'Data não disponível')
+
+    # Extrai listaRateioPremio
+    listaRateioPremio = obj.get('listaRateioPremio', [])
+
+    return resultado, dataApuracao, listaRateioPremio
 
 
 def enviar_email(remetente, senha, destinatario, assunto, corpo):
@@ -101,8 +107,29 @@ def enviar_email(remetente, senha, destinatario, assunto, corpo):
         print(f'Erro ao enviar email: {e}')
 
 
-def sorteio(apostas, resultado):
-    output = 'Resultado: ' + '-'.join(resultado) + '\n\n'
+def sorteio(apostas, resultado, dataApuracao, listaRateioPremio):
+    output = '=====================================\n'
+    output += '*** DADOS DO CONCURSO ***\n'
+    output += 'Data do sorteio..: ' + dataApuracao + '\n'
+    output += 'Dezenas sorteadas: ' + '-'.join(resultado) + '\n'
+
+    # Seção PREMIACAO
+    output += 'Ganhadores\n'
+    for premio in listaRateioPremio:
+        faixa = premio.get('faixa')
+        if faixa == 1:  # 6 acertos
+            output += f'    6 acertos: {premio.get("numeroDeGanhadores", 0)} -> R$ {premio.get("valorPremio", 0.0):.2f}'
+            if premio.get("numeroDeGanhadores", 0) == 0:
+                output += '   >>> ACUMULOU <<<'
+            output += '\n'
+        elif faixa == 2:  # 5 acertos
+            output += f'    5 acertos: {premio.get("numeroDeGanhadores", 0)} -> R$ {premio.get("valorPremio", 0.0):.2f}\n'
+        elif faixa == 3:  # 4 acertos
+            output += f'    4 acertos: {premio.get("numeroDeGanhadores", 0)} -> R$ {premio.get("valorPremio", 0.0):.2f}\n'
+
+    # output += '-----------------------------------\n\n'
+    output += '\n'
+
     resultados = []
     for aposta, nome in apostas:
         aposta_list = aposta.split('-')
@@ -116,6 +143,8 @@ def sorteio(apostas, resultado):
     # Ordenar por acertos crescente
     # resultados.sort(key=lambda x: x[0], reverse=False)
 
+    output += '=====================================\n'
+    output += '*** DADOS DO BOLÃO ***\n'
     output += '[ACERTOS] | JOGOS\n'
     for total, aposta, nome in resultados:
         if total == 6:
@@ -135,31 +164,32 @@ def sorteio(apostas, resultado):
     dois_acertos = [r for r in resultados if r[0] == 2]
     um_acerto = [r for r in resultados if r[0] == 1]
 
-    output += '\nRESUMO:\n'
-    output += f'[6] acertos (SENA)...: {len(senas)}'
+    output += '\nRESUMO BOLÃO:\n'
+    output += f'[6] acertos (SENA)...: {len(senas)} jogo'
     # output += f'Senas (6 acertos)..: {len(senas)}\n'
     # if senas:
     #     output += '  Jogos: ' + ', '.join([f'{aposta} ({total})' for total, aposta in senas]) + '\n'
     if len(senas) > 0:
-        output += ' <<< Premiado!!!'
+        output += ' <<< Premiado !!!'
 
-    output += f'\n[5] acertos (QUINA)..: {len(quinas)}'
+    output += f'\n[5] acertos (QUINA)..: {len(quinas)} jogo(s)'
     # if quinas:
     #     output += '  Jogos: ' + ', '.join([f'{aposta} ({total})' for total, aposta in quinas]) + '\n'
     if len(quinas) > 0:
-        output += ' <<< Premiado!!!'
+        output += ' <<< Premiado !!!'
 
-    output += f'\n[4] acertos (QUADRA).: {len(quadras)}'
+    output += f'\n[4] acertos (QUADRA).: {len(quadras)} jogo(s)'
     # if quadras:
     #     output += '  Jogos: ' + ', '.join([f'{aposta} ({total})' for total, aposta in quadras]) + '\n'
     if len(quadras) > 0:
-        output += ' <<< Premiado!!!'
+        output += ' <<< Premiado !!!'
 
-    output += f'\n[3] acertos..........: {len(tres_acertos)}'
-    output += f'\n[2] acertos..........: {len(dois_acertos)}'
-    output += f'\n[1] acerto...........: {len(um_acerto)}'
-    output += '\n'
+    output += f'\n[3] acertos..........: {len(tres_acertos)} jogo(s)'
+    output += f'\n[2] acertos..........: {len(dois_acertos)} jogo(s)'
+    output += f'\n[1] acerto...........: {len(um_acerto)} jogo(s)'
+    output += '\n=====================================\n\n'
 
+    # quantos jogos nossos foram premiados
     premiado = len(quadras) > 0 or len(quinas) > 0 or len(senas) > 0
 
     return output, premiado
@@ -167,9 +197,9 @@ def sorteio(apostas, resultado):
 
 def main(concurso, email=None, senha=None, login=None):
     apostas = getApostas()
-    resultado = getResultado(concurso)
+    resultado, dataApuracao, listaRateioPremio = getResultado(concurso)
 
-    output, premiado = sorteio(apostas, resultado)
+    output, premiado = sorteio(apostas, resultado, dataApuracao, listaRateioPremio)
     print(output)
 
     # Salvar o output em historico/historico_<concurso>.txt
@@ -186,7 +216,7 @@ def main(concurso, email=None, senha=None, login=None):
         if not login:
             print('Login do email não fornecido.')
             sys.exit(1)
-        assunto_base = f'Resultado Mega-Sena: {concurso}'
+        assunto_base = f'Resultado Mega-Sena: {concurso} em {dataApuracao}'
         if premiado:
             assunto = f'>>PREMIADO<< {assunto_base}'
         else:
@@ -223,5 +253,5 @@ if __name__ == '__main__':
             print('Arquivo concurso.txt não encontrado. Forneça o número do concurso.')
             sys.exit(1)
 
-    print('\nVerificar resultados do concurso:', concurso)
+    print(f'\nVerificar resultados do concurso: {concurso}\n\n')
     main(concurso, args.email, args.senha, args.login)
